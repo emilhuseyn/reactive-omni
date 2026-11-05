@@ -17,6 +17,6 @@ USD=$(forge create src/MockUSD.sol:MockUSD --rpc-url $RPC --private-key "$DEPLOY
 VAULT=$(forge create src/InstantWithdrawalVault.sol:InstantWithdrawalVault --rpc-url $RPC --private-key "$DEPLOYER_KEY" \
   --broadcast --value 0.01ether --constructor-args "$USD" "$PROXY" | addr)
 REACTIVE=$(forge create src/QueueReactive.sol:QueueReactive --rpc-url $LASNA --private-key "$DEPLOYER_KEY" \
-  --broadcast --value 2ether --constructor-args "$CHAIN" "$VAULT" | addr)
+  --broadcast --value 1.5ether --constructor-args "$CHAIN" "$VAULT" | addr)
 cast send "$VAULT" "setCallbackSender(address)" "$REACTIVE" --rpc-url $RPC --private-key "$DEPLOYER_KEY" >/dev/null
 printf 'CHAIN=%s\nUSD=%s\nVAULT=%s\nREACTIVE=%s\n' "$CHAIN" "$USD" "$VAULT" "$REACTIVE" | tee "deployed-$1.env"
