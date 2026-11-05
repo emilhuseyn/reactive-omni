@@ -9,7 +9,7 @@ Before submitting: repo public (Emil's call), video uploaded to YouTube as unlis
 - **Logo:** `video/logo.png`
 - **Track:** Every Second Counts
 - **GitHub:** https://github.com/emilhuseyn/reactive-omni
-- **Demo video:** <YouTube link>
+- **Demo video:** https://youtu.be/bQYzj3lHLnI
 - **Tags:** Reactive Network, DeFi, Base, Solidity
 
 **Description:**

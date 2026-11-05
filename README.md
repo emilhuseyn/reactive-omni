@@ -4,7 +4,7 @@ A vault whose withdrawal queue is paid the moment liquidity comes back. No keepe
 pressing "claim". A Reactive Network contract watches the vault. When liquidity returns, it calls the vault
 through a cross-chain callback, and the vault pays the queue in order.
 
-Built for the Reactive Omni Buildathon, track **Every Second Counts**.
+Built for the Reactive Omni Buildathon, track **Every Second Counts**. Demo video (2 min): https://youtu.be/bQYzj3lHLnI
 
 Measured on Base Sepolia: **liquidity returned -> queued withdrawal paid in 1-2 seconds (6-11 blocks)**, five
 runs out of five. The table below gives every transaction.
