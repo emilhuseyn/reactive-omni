@@ -14,12 +14,17 @@ tx() { cast send "$@" --rpc-url $RPC --private-key "$DEPLOYER_KEY" --json; }
 tx "$USD" "mint(address,uint256)" "$ME" 1000000000 >/dev/null
 tx "$USD" "approve(address,uint256)" "$VAULT" "$(cast max-uint)" >/dev/null
 tx "$VAULT" "deposit(uint256)" 1000000000 >/dev/null
-tx "$VAULT" "deployLiquidity(address,uint256)" "$ME" 900000000 >/dev/null
+# Lend out everything but 100 mUSD, so a 300 mUSD withdrawal has to wait in the queue.
+IDLE=$(cast call "$VAULT" "idle()(uint256)" --rpc-url $RPC | awk '{print $1}')
+tx "$VAULT" "deployLiquidity(address,uint256)" "$ME" $((IDLE - 100000000)) >/dev/null
 tx "$VAULT" "requestWithdrawal(uint256)" 300000000 >/dev/null
-echo "queued: $(cast call "$VAULT" "queueLength()(uint256)" --rpc-url $RPC)"
+QUEUED=$(cast call "$VAULT" "queueLength()(uint256)" --rpc-url $RPC)
+echo "queued: $QUEUED"
+[ "$QUEUED" = "1" ] || { echo "expected one queued withdrawal"; exit 1; }
 
 ADD=$(tx "$VAULT" "addLiquidity(uint256)" 300000000)
 ADD_BLOCK=$(echo "$ADD" | grep -o '"blockNumber":"[^"]*"' | head -1 | cut -d'"' -f4)
+ADD_TX=$(echo "$ADD" | grep -o '"transactionHash":"[^"]*"' | head -1 | cut -d'"' -f4)
 ADD_TS=$(cast block $((ADD_BLOCK)) -f timestamp --rpc-url $RPC)
 START=$(date +%s)
 echo "liquidity added in block $((ADD_BLOCK)) at $ADD_TS"
@@ -30,6 +35,13 @@ while [ "$(cast call "$VAULT" "queueLength()(uint256)" --rpc-url $RPC)" != "0" ]
 done
 PAID=$(cast logs --from-block "$ADD_BLOCK" --address "$VAULT" "Settled(uint256,uint256,uint256,uint256)" --rpc-url $RPC --json)
 SETTLE_BLOCK=$(echo "$PAID" | grep -o '"blockNumber":"[^"]*"' | head -1 | cut -d'"' -f4)
+SETTLE_TX=$(echo "$PAID" | grep -o '"transactionHash":"[^"]*"' | head -1 | cut -d'"' -f4)
 SETTLE_TS=$(cast block $((SETTLE_BLOCK)) -f timestamp --rpc-url $RPC)
-echo "settled in block $((SETTLE_BLOCK)) at $SETTLE_TS"
-echo "liquidity -> payout: $((SETTLE_TS - ADD_TS)) s, $((SETTLE_BLOCK - ADD_BLOCK)) blocks (wall clock seen here: $(( $(date +%s) - START )) s)"
+SETTLE_FROM=$(cast tx "$SETTLE_TX" from --rpc-url $RPC)
+WALL=$(( $(date +%s) - START ))
+echo "settled in block $((SETTLE_BLOCK)) at $SETTLE_TS by $SETTLE_FROM"
+echo "liquidity tx $ADD_TX"
+echo "settle tx    $SETTLE_TX"
+echo "liquidity -> payout: $((SETTLE_TS - ADD_TS)) s, $((SETTLE_BLOCK - ADD_BLOCK)) blocks (wall clock seen here: $WALL s)"
+[ -f latency.csv ] || echo "chain,liquidity_block,settle_block,blocks,seconds,liquidity_tx,settle_tx" > latency.csv
+echo "${1:-base},$((ADD_BLOCK)),$((SETTLE_BLOCK)),$((SETTLE_BLOCK - ADD_BLOCK)),$((SETTLE_TS - ADD_TS)),$ADD_TX,$SETTLE_TX" >> latency.csv
