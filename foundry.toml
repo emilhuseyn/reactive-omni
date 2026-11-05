@@ -1,0 +1,6 @@
+[profile.default]
+src = "src"
+test = "test"
+libs = ["lib"]
+solc_version = "0.8.29"
+remappings = ["reactive-lib/=lib/reactive-lib-omni/src/", "forge-std/=lib/forge-std/src/"]
